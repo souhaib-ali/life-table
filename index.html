@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tableau de Bord de Vie</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js" async></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -509,14 +510,107 @@ body.light .cbModalBox{background:rgba(255,255,255,.96)}
   <div style="font-size:.62rem;color:#6B7F94;margin-top:16px">Vos données restent sur votre appareil. Pensez à télécharger régulièrement une copie depuis l&rsquo;application.</div>
 </div>
 
+<!-- ================== ECRAN DE CONNEXION (bloque l'acces tant que l'utilisateur n'est pas authentifie) ================== -->
+<div id="authGate" style="position:fixed;inset:0;z-index:99998;background:#08090F;display:none;align-items:center;justify-content:center;padding:20px;font-family:'Inter',system-ui,sans-serif;color:#F2F4FA">
+  <div style="width:100%;max-width:340px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:28px 24px">
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="font-size:1.6rem;margin-bottom:6px"><i class="fa-solid fa-chart-line" style="color:#818CF8"></i></div>
+      <div style="font-size:1.05rem;font-weight:700">Mon Tableau de Vie</div>
+      <div style="font-size:.7rem;color:#8E97B3;margin-top:2px">Connexion requise</div>
+    </div>
+    <form id="authForm">
+      <label style="display:block;font-size:.68rem;color:#8E97B3;margin-bottom:4px">E-mail</label>
+      <input id="authEmail" type="email" autocomplete="username" required style="width:100%;margin-bottom:12px;padding:9px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.09);background:#0F1117;color:#F2F4FA;font-family:inherit;font-size:.85rem">
+      <label style="display:block;font-size:.68rem;color:#8E97B3;margin-bottom:4px">Mot de passe</label>
+      <input id="authPassword" type="password" autocomplete="current-password" required style="width:100%;margin-bottom:14px;padding:9px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.09);background:#0F1117;color:#F2F4FA;font-family:inherit;font-size:.85rem">
+      <div id="authError" style="display:none;font-size:.7rem;color:#FB7185;margin-bottom:10px"></div>
+      <button type="submit" id="authSubmit" style="width:100%;padding:10px;border:none;border-radius:8px;background:#818CF8;color:#08090F;font-weight:700;font-family:inherit;font-size:.82rem;cursor:pointer">Se connecter</button>
+    </form>
+    <div style="display:flex;justify-content:space-between;margin-top:12px">
+      <button id="authForgot" type="button" style="background:none;border:none;color:#8E97B3;font-family:inherit;font-size:.66rem;cursor:pointer;padding:0">Mot de passe oublié ?</button>
+      <button id="authSignupToggle" type="button" style="background:none;border:none;color:#8E97B3;font-family:inherit;font-size:.66rem;cursor:pointer;padding:0">Créer le compte</button>
+    </div>
+    <div id="authMsg" style="display:none;font-size:.68rem;color:#34D399;margin-top:10px"></div>
+  </div>
+</div>
+
 <div class="blobs"></div>
-<aside id="sidebar"><div class="logo"><div style="font-size:.95rem;font-weight:700;color:var(--accent)"><i class="fa-solid fa-chart-line" style="margin-right:3px"></i>Mon Tableau de Vie</div><div style="font-size:.6rem;color:var(--muted)">Suivi hebdomadaire 2026</div></div><nav id="sideNav"></nav><button id="backupBadge" data-act="backupNow" title="Sauvegarder maintenant" style="display:flex;align-items:center;gap:2px;width:100%;margin-top:8px;padding:7px 10px;background:none;border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-family:inherit;font-size:.62rem;font-weight:600;cursor:pointer"></button><div class="sv"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0"></span><span id="svT">En attente...</span></div></aside>
+<aside id="sidebar"><div class="logo"><div style="font-size:.95rem;font-weight:700;color:var(--accent)"><i class="fa-solid fa-chart-line" style="margin-right:3px"></i>Mon Tableau de Vie</div><div style="font-size:.6rem;color:var(--muted)">Suivi hebdomadaire 2026</div></div><nav id="sideNav"></nav><button id="backupBadge" data-act="backupNow" title="Sauvegarder maintenant" style="display:flex;align-items:center;gap:2px;width:100%;margin-top:8px;padding:7px 10px;background:none;border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-family:inherit;font-size:.62rem;font-weight:600;cursor:pointer"></button><button id="btnLogout" title="Se déconnecter" style="display:flex;align-items:center;justify-content:center;gap:5px;width:100%;margin-top:6px;padding:6px 10px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:.62rem;font-weight:600;cursor:pointer"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</button><div class="sv"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0"></span><span id="svT">En attente...</span></div></aside>
 <div id="main"><div id="topBar"><button id="mt"><i class="fa-solid fa-bars"></i></button><div class="wc" id="wCal"></div><div class="tb"><button id="btnTheme" title="Thème clair / sombre"><i class="fa-solid fa-moon"></i></button><button id="btnImp" title="Importer une sauvegarde"><i class="fa-solid fa-file-import"></i> Importer</button><button id="btnExp"><i class="fa-solid fa-file-export"></i> Export</button><button id="btnDl"><i class="fa-solid fa-download"></i> Télécharger</button></div></div><div id="content"></div></div>
 <input type="file" id="importFile" accept=".json,.html,application/json,text/html" style="display:none">
 <div class="toast" id="toast"></div>
 <div id="undoBar"><span id="undoMsg"></span><button id="undoBtn"><i class="fa-solid fa-rotate-left"></i> Annuler</button></div>
 <script>
 window.onerror=function(msg,src,line,col,err){try{var c=document.getElementById('content');if(c)c.innerHTML='<div style="padding:20px;font-family:sans-serif;color:#E8EDF2"><h2 style="color:#FF6B6B">Erreur détectée</h2><p style="font-size:.85rem;word-break:break-word">'+msg+'</p><p style="font-size:.7rem;color:#6B7F94">Ligne '+line+(col?':'+col:'')+'</p></div>'}catch(e){}return false};
+/* ===================== AUTHENTIFICATION & SYNCHRONISATION SUPABASE ===================== */
+var SUPABASE_URL='https://xdspikhspzrdatlhvuck.supabase.co';
+var SUPABASE_KEY='sb_publishable_H62SH203fs-Kzwa85zsHvQ_5-4CUzGx';
+var sb=null;
+try{if(window.supabase&&window.supabase.createClient)sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY)}catch(eSb){sb=null}
+function showAuthGate(){var g=document.getElementById('authGate');if(g)g.style.display='flex'}
+function hideAuthGate(){var g=document.getElementById('authGate');if(g)g.style.display='none'}
+function authErr(t){var e=document.getElementById('authError');if(!e)return;if(!t){e.style.display='none';return}e.style.display='block';e.textContent=t}
+function authMsg(t){var m=document.getElementById('authMsg');if(!m)return;if(!t){m.style.display='none';return}m.style.display='block';m.textContent=t}
+function traduireErreurAuth(e){var m=(e&&e.message)||String(e);
+if(/Invalid login credentials/i.test(m))return'E-mail ou mot de passe incorrect.';
+if(/not allowed/i.test(m))return"Cette adresse n'est pas autorisée sur ce tableau de bord.";
+if(/already registered|already exists|User already registered/i.test(m))return'Un compte existe déjà pour cet e-mail — connectez-vous.';
+if(/Password should be/i.test(m))return'Mot de passe trop court (6 caractères minimum).';
+return m}
+function setupAuthForm(){
+var f=document.getElementById('authForm');
+if(f)f.addEventListener('submit',function(ev){ev.preventDefault();authErr('');authMsg('');
+var email=document.getElementById('authEmail').value.trim();
+var pass=document.getElementById('authPassword').value;
+var btn=document.getElementById('authSubmit');btn.disabled=true;btn.textContent='Connexion…';
+sb.auth.signInWithPassword({email:email,password:pass}).then(function(res){
+if(res.error)throw res.error;
+}).catch(function(e){authErr(traduireErreurAuth(e))}).finally(function(){btn.disabled=false;btn.textContent='Se connecter'})});
+var fg=document.getElementById('authForgot');
+if(fg)fg.addEventListener('click',function(){authErr('');authMsg('');
+var email=document.getElementById('authEmail').value.trim();
+if(!email){authErr('Entrez votre e-mail ci-dessus, puis cliquez à nouveau.');return}
+sb.auth.resetPasswordForEmail(email).then(function(res){if(res.error)throw res.error;
+authMsg('E-mail de réinitialisation envoyé si ce compte existe.')}).catch(function(e){authErr(traduireErreurAuth(e))})});
+var su=document.getElementById('authSignupToggle');
+if(su)su.addEventListener('click',function(){authErr('');authMsg('');
+var email=document.getElementById('authEmail').value.trim();
+var pass=document.getElementById('authPassword').value;
+if(!email||!pass){authErr('Remplissez e-mail et mot de passe, puis réessayez.');return}
+sb.auth.signUp({email:email,password:pass}).then(function(res){if(res.error)throw res.error;
+authMsg('Compte créé. Vous pouvez vous connecter.')}).catch(function(e){authErr(traduireErreurAuth(e))})});
+var lo=document.getElementById('btnLogout');
+if(lo)lo.addEventListener('click',function(){lo.disabled=true;
+(sb?sb.auth.signOut():Promise.resolve()).catch(function(){}).then(function(){
+try{localStorage.removeItem('ldv7');localStorage.removeItem('ldv7_bak');localStorage.removeItem('ldv7_at')}catch(e){}
+location.reload()})})}
+function boot(){window.__appJsRunning=true;setupAuthForm();
+if(!sb){showAuthGate();authErr('Connexion au service impossible (vérifiez votre connexion internet), puis rechargez la page.');return}
+var booted=false;
+sb.auth.onAuthStateChange(function(event,session){
+if(session&&session.user){S.user=session.user;hideAuthGate();if(!booted){booted=true;init()}}
+else if(event==='SIGNED_OUT'){if(booted)location.reload();else showAuthGate()}
+else if(!booted){showAuthGate()}
+})}
+/* Charge les donnees distantes (Supabase) et les reconcilie avec la copie locale :
+   la source la plus recente (par horodatage) l'emporte, l'autre est mise a jour au prochain sd(). */
+function loadData(){return new Promise(function(resolve){
+var local=ld();var localAt=Number(localStorage.getItem('ldv7_at')||0);
+if(!sb||!S.user){resolve(local||{});return}
+sb.from('app_state').select('data,updated_at').eq('user_id',S.user.id).maybeSingle().then(function(res){
+if(res.error)throw res.error;
+if(res.data){var remoteAt=new Date(res.data.updated_at).getTime()||0;
+if(!local||remoteAt>=localAt){resolve(res.data.data||{});return}}
+resolve(local||{})
+}).catch(function(){resolve(local||{})})
+})}
+/* Pousse S.data vers Supabase (best-effort ; la copie locale reste la source de secours hors-ligne) */
+function syncRemote(){if(!sb||!S.user)return;
+sb.from('app_state').upsert({user_id:S.user.id,data:S.data,updated_at:new Date().toISOString()}).then(function(res){
+if(res.error)throw res.error;
+}).catch(function(){try{document.getElementById('svT').textContent='Sauvegardé (local seulement)'}catch(e){}})}
+/* Reconciliation silencieuse apres chargement : aligne le miroir local et Supabase, sans toast */
+function quietSync(){try{var payload=JSON.stringify(S.data);localStorage.setItem('ldv7',payload);localStorage.setItem('ldv7_bak',payload);localStorage.setItem('ldv7_at',String(Date.now()))}catch(e){}syncRemote()}
 var D=['Sam','Dim','Lun','Mar','Mer','Jeu'],MO=['Jan','Fev','Mar','Avr','Mai','Jun','Jul','Aou','Sep','Oct','Nov','Dec'];
 var SC=[{id:'overview',nm:"Vue d'ensemble",ic:'fa-solid fa-grip',cl:'var(--accent)',ob:false},{id:'express',nm:'Bilan express',ic:'fa-solid fa-bolt-lightning',cl:'#FACC15',ob:false},{id:'sante',nm:'Santé',ic:'fa-solid fa-heart-pulse',cl:'#FF6B6B',ob:true},{id:'travail',nm:'Travail',ic:'fa-solid fa-briefcase',cl:'#818CF8',ob:true},{id:'cabinet',nm:'Cabinet',ic:'fa-solid fa-scale-balanced',cl:'#A78BFA',ob:true,custom:true,hideCard:true},{id:'etudes',nm:'Études',ic:'fa-solid fa-graduation-cap',cl:'#FFB020',ob:true},{id:'ecriture',nm:'Projet écriture',ic:'fa-solid fa-book',cl:'#F472B6',ob:true},{id:'formation',nm:'Projet formation',ic:'fa-solid fa-chalkboard-user',cl:'#22D3EE',ob:true},{id:'religion',nm:'Religion',ic:'fa-solid fa-mosque',cl:'#A78BFA',ob:true},{id:'budget',nm:'Budget',ic:'fa-solid fa-wallet',cl:'#84CC16',ob:true,hideCard:true},{id:'lexique',nm:'Lexique',ic:'fa-solid fa-book-open',cl:'#E879F9',ob:true,hideCard:true},{id:'calendrier',nm:'Calendrier',ic:'fa-solid fa-calendar-days',cl:'#60A5FA',ob:false},{id:'interpretation',nm:'Interprétariat',ic:'fa-solid fa-language',cl:'#38BDF8',ob:false},{id:'bilan',nm:'Bilan général',ic:'fa-solid fa-chart-pie',cl:'#818CF8',ob:false}];
 var OB={
@@ -569,6 +663,7 @@ function sd(){
   }catch(e){
     try{document.getElementById('svT').textContent='Sauvegarde impossible';tst('Sauvegarde impossible — espace saturé ?')}catch(e2){}
   }
+  syncRemote();
 }
 /* Demande au navigateur de conserver le stockage de facon permanente
    (empeche l'effacement automatique quand l'espace disque se remplit). */
@@ -2934,17 +3029,18 @@ var pwD=e.target.closest('[data-act="pwDel"]');if(pwD){var pkey=pwD.dataset.pkey
 }
 
 function applyTheme(){var t=gp('theme','dark');document.body.classList.toggle('light',t==='light');var btn=document.getElementById('btnTheme');if(btn)btn.innerHTML='<i class="fa-solid fa-'+(t==='light'?'sun':'moon')+'"></i>'}
-function init(){try{askPersistentStorage();var saved=ld();if(saved)S.data=saved;else S.data={};S.wsat=gSat(new Date());migrateDossiers();bNav();setupEvts();applyTheme();render();if(!saved)ss();
+function init(){askPersistentStorage();loadData().then(function(d){try{
+S.data=d||{};S.wsat=gSat(new Date());migrateDossiers();bNav();setupEvts();applyTheme();render();quietSync();
 try{window.addEventListener('beforeunload',function(){clearTimeout(sTmr);try{localStorage.setItem('ldv7',JSON.stringify(S.data))}catch(e4){}});
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden'){clearTimeout(sTmr);sd()}})}catch(e3){}
-setTimeout(maybeShowBackupModal,800)}catch(e){try{document.getElementById('content').innerHTML='<div style="padding:20px;color:#E8EDF2"><h2>Erreur de chargement</h2><p style="color:#FF6B6B;font-size:.8rem">'+(e&&e.message?e.message:e)+'</p></div>'}catch(e2){}}}
-/* Declenche init de maniere fiable, meme si DOMContentLoaded est deja passe (cas iOS/Fichiers) */
-if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init)}else{init()}
+setTimeout(maybeShowBackupModal,800)}catch(e){try{document.getElementById('content').innerHTML='<div style="padding:20px;color:#E8EDF2"><h2>Erreur de chargement</h2><p style="color:#FF6B6B;font-size:.8rem">'+(e&&e.message?e.message:e)+'</p></div>'}catch(e2){}}})}
+/* Declenche l'authentification de maniere fiable, meme si DOMContentLoaded est deja passe (cas iOS/Fichiers) */
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',boot)}else{boot()}
 </script>
 <script>
 /* Retire l'ecran de secours si l'application a bien demarre ; sinon le laisse avec les instructions */
 (function(){var b=document.getElementById('jsBoot');if(!b)return;var tries=0;
-function ok(){try{var nv=document.getElementById('sideNav');return !!(nv&&nv.children.length)}catch(e){return false}}
+function ok(){try{var nv=document.getElementById('sideNav');return !!(window.__appJsRunning||(nv&&nv.children.length))}catch(e){return false}}
 function check(){if(ok()){b.style.display='none';return}
   if(++tries<12){setTimeout(check,250)}
   else{var s=b.querySelector('.jsBootSpin');if(s)s.textContent="L'application n'a pas pu démarrer dans cette visionneuse.";}}
